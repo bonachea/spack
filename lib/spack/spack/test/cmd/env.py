@@ -46,7 +46,7 @@ env = SpackCommand('env')
 
 
 def test_add():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks')
     assert Spec('mpileaks') in e.user_specs
 
@@ -83,7 +83,7 @@ def test_env_destroy():
 
 
 def test_concretize():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks')
     e.concretize()
     env_specs = e._get_environment_specs()
@@ -91,7 +91,7 @@ def test_concretize():
 
 
 def test_env_install_all(install_mockery, mock_fetch):
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('cmake-client')
     e.concretize()
     e.install_all()
@@ -100,12 +100,13 @@ def test_env_install_all(install_mockery, mock_fetch):
     assert spec.package.installed
 
 
-def test_env_install(install_mockery, mock_fetch):
+def test_env_install_single_spec(install_mockery, mock_fetch):
     env('create', 'test')
     install = SpackCommand('install')
 
-    with ev.env_context('test'):
-        install('cmake-client')
+    e = ev.read('test')
+    with e:
+        install('-v', 'cmake-client')
 
     e = ev.read('test')
     assert e.user_specs[0].name == 'cmake-client'
@@ -114,7 +115,7 @@ def test_env_install(install_mockery, mock_fetch):
 
 
 def test_remove_after_concretize():
-    e = ev.Environment('test')
+    e = ev.create('test')
 
     e.add('mpileaks')
     e.concretize()
@@ -146,7 +147,7 @@ def test_remove_command():
 
 
 def test_reset_compiler():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks')
     e.concretize()
 
@@ -161,7 +162,7 @@ def test_reset_compiler():
 
 
 def test_environment_status():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks')
     e.concretize()
     e.add('python')
@@ -175,7 +176,7 @@ def test_environment_status():
 
 
 def test_upgrade_dependency():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks ^callpath@0.9')
     e.concretize()
 
@@ -188,36 +189,38 @@ def test_upgrade_dependency():
 
 
 def test_to_lockfile_dict():
-    e = ev.Environment('test')
+    e = ev.create('test')
     e.add('mpileaks')
     e.concretize()
     context_dict = e._to_lockfile_dict()
 
-    e_copy = ev.Environment('test_copy')
+    e_copy = ev.create('test_copy')
 
     e_copy._read_lockfile_dict(context_dict)
     assert e.specs_by_hash == e_copy.specs_by_hash
 
 
 def test_env_repo():
-    e = ev.Environment('testx')
+    e = ev.create('test')
     e.add('mpileaks')
     _env_concretize(e)
 
-    package = e.repo.get(spack.spec.Spec('mpileaks'))
+    package = e.repo.get('mpileaks')
+    assert package.name == 'mpileaks'
     assert package.namespace == 'spack.pkg.builtin.mock'
 
 
 def test_user_removed_spec():
-    """Ensure a user can remove from any position in the env.yaml file."""
-    initial_yaml = """\
+    """Ensure a user can remove from any position in the spack.yaml file."""
+    initial_yaml = StringIO("""\
 env:
   specs:
   - mpileaks
   - hypre
   - libelf
-"""
-    before = ev.Environment('test', initial_yaml)
+""")
+
+    before = ev.create('test', initial_yaml)
     before.concretize()
     before.write()
 
@@ -241,8 +244,57 @@ env:
     assert not any(x.name == 'hypre' for x in env_specs)
 
 
+def test_init_from_lockfile(tmpdir):
+    """Test that an environment can be instantiated from a lockfile."""
+    initial_yaml = StringIO("""\
+env:
+  specs:
+  - mpileaks
+  - hypre
+  - libelf
+""")
+    e1 = ev.create('test', initial_yaml)
+    e1.concretize()
+    e1.write()
+
+    e2 = ev.Environment(str(tmpdir), e1.lock_path)
+
+    for s1, s2 in zip(e1.user_specs, e2.user_specs):
+        assert s1 == s2
+
+    for h1, h2 in zip(e1.concretized_order, e2.concretized_order):
+        assert h1 == h2
+        assert e1.specs_by_hash[h1] == e2.specs_by_hash[h2]
+
+    for s1, s2 in zip(e1.concretized_user_specs, e2.concretized_user_specs):
+        assert s1 == s2
+
+
+def test_init_from_yaml(tmpdir):
+    """Test that an environment can be instantiated from a lockfile."""
+    initial_yaml = StringIO("""\
+env:
+  specs:
+  - mpileaks
+  - hypre
+  - libelf
+""")
+    e1 = ev.create('test', initial_yaml)
+    e1.concretize()
+    e1.write()
+
+    e2 = ev.Environment(str(tmpdir), e1.manifest_path)
+
+    for s1, s2 in zip(e1.user_specs, e2.user_specs):
+        assert s1 == s2
+
+    assert not e2.concretized_order
+    assert not e2.concretized_user_specs
+    assert not e2.specs_by_hash
+
+
 def test_init_with_file_and_remove(tmpdir):
-    """Ensure a user can remove from any position in the env.yaml file."""
+    """Ensure a user can remove from any position in the spack.yaml file."""
     path = tmpdir.join('spack.yaml')
 
     with tmpdir.as_cwd():
@@ -278,7 +330,7 @@ env:
 """
     spack.package_prefs.PackagePrefs.clear_caches()
 
-    _env_create('test', test_config)
+    _env_create('test', StringIO(test_config))
 
     e = ev.read('test')
     ev.prepare_config_scope(e)
@@ -298,11 +350,9 @@ env:
 """
     spack.package_prefs.PackagePrefs.clear_caches()
 
-    _env_create('test', test_config)
-
+    _env_create('test', StringIO(test_config))
     e = ev.read('test')
 
-    print(e.path)
     with open(os.path.join(e.path, 'included-config.yaml'), 'w') as f:
         f.write("""\
 packages:
@@ -328,7 +378,7 @@ env:
 """ % config_scope_path
 
     spack.package_prefs.PackagePrefs.clear_caches()
-    _env_create('test', test_config)
+    _env_create('test', StringIO(test_config))
 
     e = ev.read('test')
 
@@ -358,13 +408,12 @@ env:
   specs:
   - mpileaks
 """
+
     spack.package_prefs.PackagePrefs.clear_caches()
 
-    _env_create('test', test_config)
-
+    _env_create('test', StringIO(test_config))
     e = ev.read('test')
 
-    print(e.path)
     with open(os.path.join(e.path, 'included-config.yaml'), 'w') as f:
         f.write("""\
 packages:
@@ -450,8 +499,6 @@ def test_env_commands_die_with_no_env_arg():
     with pytest.raises(spack.main.SpackCommandError):
         env('concretize')
     with pytest.raises(spack.main.SpackCommandError):
-        env('status')
-    with pytest.raises(spack.main.SpackCommandError):
         env('loads')
     with pytest.raises(spack.main.SpackCommandError):
         env('stage')
@@ -463,3 +510,7 @@ def test_env_commands_die_with_no_env_arg():
         env('add')
     with pytest.raises(spack.main.SpackCommandError):
         env('remove')
+
+    # This should NOT raise an error with no environment
+    # it just tells the user there isn't an environment
+    env('status')
