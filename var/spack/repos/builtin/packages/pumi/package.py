@@ -26,6 +26,7 @@ class Pumi(CMakePackage):
     # it compares greater than a numbered version (e.g., 2.1.0). The spack
     # version string 'master' compares less than a numbered version.
     version('develop', branch='master')
+    version('2.2.0', tag='2.2.0')
     version('2.1.0', commit='840fbf6ec49a63aeaa3945f11ddb224f6055ac9f')
 
     variant('zoltan', default=False, description='Enable Zoltan Features')
