@@ -34,7 +34,7 @@ class PyXdot(PythonPackage):
         spec = self.spec
         repo_paths = '%s:%s:%s:%s' % (
             join_path(spec['pango'].prefix.lib, 'girepository-1.0'),
-            join_path(spec['atk'].prefix.lib64, 'girepository-1.0'),
+            join_path(spec['atk'].prefix.lib, 'girepository-1.0'),
             join_path(spec['gdk-pixbuf'].prefix.lib, 'girepository-1.0'),
             join_path(spec['gtkplus'].prefix.lib, 'girepository-1.0'))
         dst = join_path(spec.prefix, spec['python'].package.site_packages_dir,
@@ -52,7 +52,7 @@ class PyXdot(PythonPackage):
                              join_path(spec['pango'].prefix.lib,
                                        'girepository-1.0'))
         run_env.prepend_path('GI_TYPELIB_PATH',
-                             join_path(spec['atk'].prefix.lib64,
+                             join_path(spec['atk'].prefix.lib,
                                        'girepository-1.0'))
         run_env.prepend_path('GI_TYPELIB_PATH',
                              join_path(spec['gdk-pixbuf'].prefix.lib,
