@@ -103,6 +103,7 @@ class Ffmpeg(AutotoolsPackage):
     conflicts('+libwebp', when='@2.1.999:')
     conflicts('+libssh', when='@2.0.999:')
     conflicts('+libzmq', when='@:1.999.999')
+    conflicts('%nvhpc')
 
     @property
     def libs(self):
@@ -111,7 +112,7 @@ class Ffmpeg(AutotoolsPackage):
     @property
     def headers(self):
         headers = find_all_headers(self.prefix.include)
-        headers.directories = self.prefix.include
+        headers.directories = [self.prefix.include]
         return headers
 
     def enable_or_disable_meta(self, variant, options):

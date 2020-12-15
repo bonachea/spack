@@ -72,17 +72,19 @@ class Kokkos(CMakePackage, CudaPackage):
         'tests': [False, 'Build for tests'],
     }
 
-    amd_gpu_arches = [
+    amd_gpu_arches = (
         'fiji',
         'gfx901',
         'vega900',
         'vega906',
-    ]
-    variant("amd_gpu_arch", default='none', values=amd_gpu_arches,
+    )
+    variant("amd_gpu_arch", default='none', values=('none',) + amd_gpu_arches,
             description="AMD GPU architecture")
     conflicts("+hip", when="amd_gpu_arch=none")
 
     spack_micro_arch_map = {
+        "graviton": "",
+        "graviton2": "",
         "aarch64": "",
         "arm": "",
         "ppc": "",
@@ -172,6 +174,8 @@ class Kokkos(CMakePackage, CudaPackage):
     variant("wrapper", default=False,
             description="Use nvcc-wrapper for CUDA build")
     depends_on("kokkos-nvcc-wrapper", when="+wrapper")
+    depends_on("kokkos-nvcc-wrapper@develop", when="@develop+wrapper")
+    depends_on("kokkos-nvcc-wrapper@master", when="@master+wrapper")
     conflicts("+wrapper", when="~cuda")
 
     variant("std", default="11", values=["11", "14", "17", "20"], multi=False)
