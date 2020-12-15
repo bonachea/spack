@@ -22,11 +22,13 @@ class Legion(CMakePackage):
        tuning of Legion applications to new architectures.
     """
     homepage = "http://legion.stanford.edu/"
-    url      = "https://github.com/StanfordLegion/legion/tarball/legion-20.06.0"
+    url      = "https://github.com/StanfordLegion/legion/tarball/legion-20.09.0"
     git      = "https://github.com/StanfordLegion/legion.git"
 
     version('master', branch='master')
     version('stable',  branch='stable')
+    version('20.12.0', tag='legion-20.12.0')
+    version('20.09.0', tag='legion-20.09.0')
     version('20.06.0', tag='legion-20.06.0')
     version('20.03.0', tag='legion-20.03.0')
     version('19.12.0', tag='legion-19.12.0')
