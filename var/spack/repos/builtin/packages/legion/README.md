@@ -132,6 +132,14 @@ Finally, to build the highest performing installation of Legion requires an appr
 
 * **`zlib`**: This variant enables support for zlib. `default=off`
 
-## Example Configuration of a High-Performance Legion Install
+## Example Configuration of a High-Performance Legion Variant
 
 ---
+
+TODO: Need to finish this section.
+
+## Example Configuration of a Debugging Legion Variant
+
+---
+
+TODO: Need to finish this section.
