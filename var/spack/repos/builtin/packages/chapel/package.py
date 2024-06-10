@@ -57,6 +57,8 @@ class Chapel(AutotoolsPackage, CudaPackage, ROCmPackage):
 
     patch("fix_spack_cc_wrapper_in_cray_prgenv.patch", when="@2.0.0:")
 
+    patch("fix_gasnet_hwloc.patch")  # chapel:#18050
+
     compilers = (
         "allinea",
         "clang",
