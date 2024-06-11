@@ -520,8 +520,9 @@ class Chapel(AutotoolsPackage, CudaPackage, ROCmPackage):
             env.set(var, value)
 
     def prepend_cpath_include(self, env, prefix):
-        if prefix != "/usr":
-            env.prepend_path("CPATH", prefix.include)
+        #if prefix != "/usr":
+        spack.main.send_warning_to_tty("CPATH+="+prefix+" /include")
+        env.prepend_path("CPATH", prefix.include)
 
     def setup_env_vars(self, env):
         for v in self.spec.variants.keys():
